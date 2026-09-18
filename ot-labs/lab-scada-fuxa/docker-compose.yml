@@ -1,0 +1,19 @@
+services:
+  fuxa-scada:
+    image: frangoteam/fuxa:latest
+    container_name: independent_fuxa_hmi
+    restart: unless-stopped
+    ports:
+      - "1881:1881"
+    networks:
+      scada_isolated_net:
+        ipv4_address: 10.10.10.50
+
+networks:
+  scada_isolated_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.10.0/24
+          gateway: 10.10.10.1
+
