@@ -1,0 +1,8 @@
+*.iso
+*.bz2
+*.tar
+*.pcap
+*.pcapng
+pcap/
+.env
+*.log

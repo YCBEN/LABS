@@ -1,0 +1,62 @@
+# OT Cyber Lab - Phase 1: Level 0 / Level 1 (bottom-up build)
+# Linux Docker host required (capture uses host networking + named bridges).
+#   docker compose up -d --build     -> whole phase starts
+#   docker compose down              -> stops it (add -v to wipe data)
+
+name: otlab
+
+networks:
+  l0_field:                      # Level 0 - field devices (fieldbus side of the PLC)
+    driver: bridge
+    internal: true               # no route out of the lab
+    driver_opts:
+      com.docker.network.bridge.name: br-l0
+    ipam:
+      config: [{ subnet: 10.250.1.0/24 }]
+  l1_control:                    # Level 1 - control network
+    driver: bridge
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-l1
+    ipam:
+      config: [{ subnet: 10.250.10.0/24 }]
+  access:                        # operator access only; NAT to the outside disabled
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-acc
+      com.docker.network.bridge.enable_ip_masquerade: "false"
+    ipam:
+      config: [{ subnet: 10.250.99.0/24 }]
+
+services:
+  field-sim:                     # simulated tank + pump, Modbus/TCP server on 502
+    build: { context: ./images/field-sim, network: host }
+    restart: unless-stopped
+    networks:
+      l0_field: { ipv4_address: 10.250.1.21 }
+
+  plc1:                          # OpenPLC runtime, dual-homed: L1 control side + L0 field side
+    build: { context: ./images/openplc, network: host }
+    restart: unless-stopped
+    networks:
+      l1_control: { ipv4_address: 10.250.10.11 }
+      l0_field:   { ipv4_address: 10.250.1.11 }
+
+  ews:                           # temporary test workstation + operator door to the OpenPLC web UI
+    build: { context: ./images/ews, network: host }
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"    # http://localhost:8080 -> PLC web UI
+    networks:
+      l1_control: { ipv4_address: 10.250.10.250 }
+      access:     { ipv4_address: 10.250.99.10 }
+
+  capture:                       # baseline pcaps from each lab bridge (feeds Malcolm later)
+    build: { context: ./images/ews, network: host }
+    network_mode: host
+    cap_add: [NET_RAW, NET_ADMIN]
+    volumes:
+      - ./pcap:/pcap
+    command: >
+      sh -c 'for i in br-l0 br-l1; do
+      tcpdump -i $$i -nn -G 300 -w "/pcap/$$i-%Y%m%d-%H%M%S.pcap" -Z root & done; wait'
