@@ -64,8 +64,8 @@ flowchart TB
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Host, tools, images, documentation | Done |
-| 1 | Level 0/1: PLC and field simulator on the switch | In progress |
-| 2 | OPNsense firewall and Level 2 (HMI, SCADA, EWS) | Planned |
+| 1 | Level 0/1: PLC and field simulator on the switch | Done |
+| 2 | OPNsense firewall and Level 2 (HMI, SCADA, EWS) | In progress |
 | 3 | Level 3 services (historian, patch repo, NTP/syslog) | Planned |
 | 4 | Malcolm traffic monitoring | Planned |
 | 5 | MISP and threat-intel integration | Planned |
