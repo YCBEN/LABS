@@ -101,6 +101,8 @@ the default OpenPLC password after the first login.
 - A Docker bridge is a plain virtual switch with no VLANs, which is why the final design
   uses Open vSwitch for real VLAN trunks and a mirror port.
 
+- Two copies of the lab (Compose smoke test and GNS3) shared the same addresses; the switch counters staying flat exposed it. See [docs/troubleshooting.md](docs/troubleshooting.md).
+
 ## Safety
 
 Run this lab only in an isolated environment. It contains intentionally simple, unhardened
