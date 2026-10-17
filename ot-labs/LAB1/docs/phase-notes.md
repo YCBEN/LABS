@@ -16,3 +16,11 @@
   interfaces 100, 200 and 210, then Part 2 (Level 2 containers and conduit rules).
 - Credentials are kept out of the repository. The firewall configuration export is
   private because it contains password hashes.
+
+## Phase 2, Part 1 (in progress)
+
+- Done: OPNsense installed; trunk to Open vSwitch eth0; out-of-band management through a
+  dedicated card (vtnet2, 10.250.99.1/24) with a verified ping.
+- Design change: management no longer uses a VLAN on the switch (see ip-vlan-plan.md).
+- Next: disable the placeholder WAN, create VLAN interfaces 100, 200 and 210, then Part 2.
+- LAB1 stays strictly air-gapped; outbound-only access is left to a later lab.

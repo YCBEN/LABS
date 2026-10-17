@@ -56,3 +56,52 @@ over HTTPS worked, which pointed to network filtering rather than a Docker probl
 
 **Fix.** Rewrote the simulator: initial value at start-up, errors logged inside the update
 loop, task reference kept, and exact register addressing.
+
+## Incident 4: pings answered by the VM itself (Phase 2)
+
+**Symptom.** Ping to 10.250.99.1 replied in 0.02 to 0.06 ms; the web interface would not open.
+
+**Evidence.** `ip route get 10.250.99.1` said `local ... dev lo`; `ip -br addr` showed
+`br-l0`, `br-l1` and `br-acc` holding 10.250.1.1, 10.250.10.1 and 10.250.99.1;
+`docker ps -a` and `docker network ls` showed the otlab- containers and otlab_ networks;
+`ip neigh` was empty (no ARP exchange).
+
+**Root cause.** The VM is shut down at night and the compose lab was started again after
+each boot. Each start recreates its bridges with the same addresses as the GNS3 lab, and
+`br-acc` owned the firewall's address. A restart policy was ruled out (`restart=no`).
+
+**Fix.** Removed the otlab- containers by name and the otlab_ networks (the GNS3. containers
+were left alone). The compose file is now a build recipe only; `configs/start-lab.sh`
+refuses to continue if stale compose containers or bridges exist.
+
+**Lesson.** A reply under 0.1 ms is a warning: check which interface owns the address.
+
+## Incident 5: tap0 lost its settings (Phase 2)
+
+**Symptom.** The route to 10.250.99.1 pointed at ens33, or pings gave no reply and no error.
+
+**Cause.** tap0 disappears when the VM restarts, and goes down and loses its address when
+GNS3 stops the Cloud node.
+
+**Fix.** Recreate it after the Cloud node is running (`configs/start-lab.sh`).
+
+## Incident 6: Cloud node offered the internet card (Phase 2)
+
+**Symptom.** The Cloud node's Ethernet tab listed ens33, br-l0 and br-l1.
+
+**Meaning.** ens33 is the VM's internet-connected card and would break the air-gap.
+
+**Fix.** Leave the Ethernet list empty; use only tap0 on the TAP tab. Switch counters then
+showed eth4 idle because nothing was plugged into it, which led to the out-of-band
+management design.
+
+## Troubleshooting ladder
+
+| Hop | Command | Good result |
+|---|---|---|
+| VM interface | `ip -br link show tap0` | UP, LOWER_UP |
+| Route | `ip route get 10.250.99.1` | dev tap0 |
+| ARP | `ip neigh show 10.250.99.1` | MAC, REACHABLE |
+| Switch | `ovs-ofctl dump-ports br0` | counters rise |
+| Firewall | `ifconfig vtnet2` (OPNsense shell) | status: active |
+| Timing | ping reply time | above 0.1 ms |
